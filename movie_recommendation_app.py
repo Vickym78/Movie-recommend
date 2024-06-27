@@ -10,7 +10,7 @@ install('pandas')
 install('scikit-learn')
 
 # Create the Streamlit app script
-streamlit_app_code = '''
+
 import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -66,7 +66,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-'''
 
 with open('movie_recommendation_app.py', 'w') as f:
     f.write(streamlit_app_code)
