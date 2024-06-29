@@ -1,16 +1,3 @@
-import subprocess
-import sys
-
-def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-# Install necessary packages
-install('streamlit')
-install('pandas')
-install('scikit-learn')
-
-# Create the Streamlit app script
-
 import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -66,9 +53,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-with open('movie_recommendation_app.py', 'w') as f:
-    f.write(streamlit_app_code)
-
-# Run the Streamlit app
-subprocess.run(["streamlit", "run", "movie_recommendation_app.py"])
