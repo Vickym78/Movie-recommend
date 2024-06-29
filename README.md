@@ -1,8 +1,8 @@
-Here's a sample (link unavailable) code for your Movie Recommender app:
+Here's a  Movie Recommender app:
 
-Movie Recommender App
+Movie Recommender App(https://movie-recommend-d4f9q4xmaues4zcyfj22cf.streamlit.app/)
 
-[!(live server link )]((https://movie-recommend-d4f9q4xmaues4zcyfj22cf.streamlit.app/))
+
 
 Description
 
