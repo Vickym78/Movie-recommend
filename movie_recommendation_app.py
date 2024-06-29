@@ -1,59 +1,55 @@
-import pickle
 import streamlit as st
-import requests
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-def fetch_poster(movie_id):
-    url = "https://api.themoviedb.org/3/movie/{}?api_key=8265bd1679663a7ea12ac168da84d2e8&language=en-US".format(movie_id)
-    data = requests.get(url)
-    data = data.json()
-    poster_path = data['poster_path']
-    full_path = "https://image.tmdb.org/t/p/w500/" + poster_path
-    return full_path
+# Load dataset
+@st.cache_data
+def load_data():
+    return pd.read_csv('tmdb_5000_movies.csv')
 
-def recommend(movie):
-    index = movies[movies['title'] == movie].index[0]
-    distances = sorted(list(enumerate(similarity[index])), reverse=True, key=lambda x: x[1])
-    recommended_movie_names = []
-    recommended_movie_posters = []
-    for i in distances[1:6]:
-        # fetch the movie poster
-        movie_id = movies.iloc[i[0]].movie_id
-        recommended_movie_posters.append(fetch_poster(movie_id))
-        recommended_movie_names.append(movies.iloc[i[0]].title)
+# Preprocess data
+def preprocess_data(df):
+    df = df[['title', 'overview']].dropna()
+    df['overview'] = df['overview'].fillna('')
+    return df
 
-    return recommended_movie_names,recommended_movie_posters
+# Compute the cosine similarity matrix
+def compute_cosine_similarity(df):
+    tfidf = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = tfidf.fit_transform(df['overview'])
+    cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
+    return cosine_sim
 
+# Get movie recommendations
+def get_recommendations(title, df, cosine_sim):
+    idx = df[df['title'] == title].index[0]
+    sim_scores = list(enumerate(cosine_sim[idx]))
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    sim_scores = sim_scores[1:11]
+    movie_indices = [i[0] for i in sim_scores]
+    return df['title'].iloc[movie_indices]
 
-st.header('Movie Recommender System')
-movies = pickle.load(open('model/movie_list.pkl','rb'))
-similarity = pickle.load(open('model/similarity.pkl','rb'))
+# Streamlit app
+def main():
+    st.title("Movie Recommendation System")
+    
+    # Load and preprocess data
+    df = load_data()
+    df = preprocess_data(df)
+    cosine_sim = compute_cosine_similarity(df)
+    
+    # Movie selection
+    st.header("Select a Movie")
+    movie_list = df['title'].tolist()
+    selected_movie = st.selectbox("Select a movie to get recommendations:", movie_list)
+    
+    # Show recommendations
+    if st.button("Recommend"):
+        recommendations = get_recommendations(selected_movie, df, cosine_sim)
+        st.write("**Recommended Movies:**")
+        for i, movie in enumerate(recommendations):
+            st.write(f"{i+1}. {movie}")
 
-movie_list = movies['title'].values
-selected_movie = st.selectbox(
-    "Type or select a movie from the dropdown",
-    movie_list
-)
-
-if st.button('Show Recommendation'):
-    recommended_movie_names,recommended_movie_posters = recommend(selected_movie)
-    col1, col2, col3, col4, col5 = st.beta_columns(5)
-    with col1:
-        st.text(recommended_movie_names[0])
-        st.image(recommended_movie_posters[0])
-    with col2:
-        st.text(recommended_movie_names[1])
-        st.image(recommended_movie_posters[1])
-
-    with col3:
-        st.text(recommended_movie_names[2])
-        st.image(recommended_movie_posters[2])
-    with col4:
-        st.text(recommended_movie_names[3])
-        st.image(recommended_movie_posters[3])
-    with col5:
-        st.text(recommended_movie_names[4])
-        st.image(recommended_movie_posters[4])
-
-
-
-
+if __name__ == "__main__":
+    main()
