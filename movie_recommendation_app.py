@@ -1,9 +1,8 @@
-# movie_recommendation_app.py
 import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.neighbors import NearestNeighbors
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
 
 # Load dataset
 @st.cache_data
@@ -12,8 +11,9 @@ def load_data():
 
 # Preprocess data
 def preprocess_data(df):
-    df = df[['title', 'overview', 'vote_average', 'vote_count']].dropna()
+    df = df[['title', 'overview', 'vote_average', 'vote_count', 'genres']].dropna()
     df['overview'] = df['overview'].fillna('')
+    df['genre'] = df['genres'].apply(lambda x: eval(x)[0]['name'] if eval(x) else 'Unknown')  # Extract first genre
     return df
 
 # Compute the feature matrix using TF-IDF and other features
@@ -29,28 +29,34 @@ def compute_features(df):
     features = pd.concat([pd.DataFrame(tfidf_matrix.toarray()), pd.DataFrame(scaled_features)], axis=1)
     return features
 
-# Train the KNN model
-def train_knn(features):
-    knn = NearestNeighbors(metric='cosine', algorithm='brute', n_neighbors=10)
-    knn.fit(features)
-    return knn
+# Train the Random Forest model
+def train_random_forest(features, labels):
+    rf = RandomForestClassifier(n_estimators=100, random_state=42)
+    rf.fit(features, labels)
+    return rf
 
-# Get movie recommendations using KNN
-def get_recommendations(title, df, knn, features):
+# Get movie recommendations based on predicted genre
+def get_recommendations_by_genre(title, df, rf, features, label_encoder):
     idx = df[df['title'] == title].index[0]
-    distances, indices = knn.kneighbors(features.iloc[idx, :].values.reshape(1, -1), n_neighbors=11)
-    movie_indices = indices.flatten()[1:]  # Exclude the first one as it is the selected movie itself
-    return df['title'].iloc[movie_indices]
+    predicted_genre_idx = rf.predict(features.iloc[idx, :].values.reshape(1, -1))
+    predicted_genre = label_encoder.inverse_transform(predicted_genre_idx)[0]
+    recommended_movies = df[df['genre'] == predicted_genre]['title'].tolist()
+    return recommended_movies
 
 # Streamlit app
 def main():
     st.title("Movie Recommendation System")
-    
+
     # Load and preprocess data
     df = load_data()
     df = preprocess_data(df)
     features = compute_features(df)
-    knn = train_knn(features)
+
+    # Encode genres
+    label_encoder = LabelEncoder()
+    df['genre_encoded'] = label_encoder.fit_transform(df['genre'])
+
+    rf = train_random_forest(features, df['genre_encoded'])
     
     # Movie selection
     st.header("Select a Movie")
@@ -59,8 +65,8 @@ def main():
     
     # Show recommendations
     if st.button("Recommend"):
-        recommendations = get_recommendations(selected_movie, df, knn, features)
-        st.write("**Recommended Movies:**")
+        recommendations = get_recommendations_by_genre(selected_movie, df, rf, features, label_encoder)
+        st.write(f"**Recommended Movies (Same Genre as {selected_movie}):**")
         for i, movie in enumerate(recommendations):
             st.write(f"{i+1}. {movie}")
 
