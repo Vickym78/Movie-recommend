@@ -44,7 +44,7 @@ def get_recommendations(title, df, knn, features):
 
 # Streamlit app
 def main():
-    st.title("Movie Recommendation System using KNN")
+    st.title("Movie Recommendation System")
     
     # Load and preprocess data
     df = load_data()
