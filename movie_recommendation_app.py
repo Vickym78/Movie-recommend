@@ -34,22 +34,56 @@ def get_recommendations(title, df, knn, features):
 
 # Streamlit app
 def main():
-    st.title("Movie Recommendation System")
+    st.set_page_config(page_title="Movie Recommender", layout="wide", page_icon="🎥")
+    
+    # Header section with styling
+    st.markdown("""
+    <style>
+    .title {
+        font-size: 50px;
+        font-weight: bold;
+        color: #FF4B4B;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .subtitle {
+        font-size: 20px;
+        text-align: center;
+        color: #2B2B2B;
+        margin-bottom: 30px;
+    }
+    .recommendation {
+        font-size: 18px;
+        margin-top: 10px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="title">Movie Recommendation System 🎥</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtitle">Find movies similar to your favorites!</div>', unsafe_allow_html=True)
 
     # Load and preprocess data
-    df = load_data('tmdb_5000_movies.csv')
-    features = compute_features(df)
-    knn = train_knn(features)
+    with st.spinner("Loading data..."):
+        df = load_data('tmdb_5000_movies.csv')
+        features = compute_features(df)
+        knn = train_knn(features)
 
     # Movie selection
-    selected_movie = st.selectbox("Select a movie", df['title'].tolist())
+    st.write("### Select a Movie")
+    selected_movie = st.selectbox("Choose a movie to get recommendations:", df['title'].tolist())
 
-    # Recommend button
-    if st.button("Recommend"):
+    # Button for recommendations
+    if st.button("🎬 Recommend Movies"):
         recommendations = get_recommendations(selected_movie, df, knn, features)
-        st.write(f"**Recommended Movies (Similar to {selected_movie}):**")
-        for i, movie in enumerate(recommendations, 1):
-            st.write(f"{i}. {movie}")
+
+        # Display recommendations in a styled format
+        st.write(f"### Recommendations for **{selected_movie}**:")
+        cols = st.columns(2)  # Create two columns for better layout
+        for i, movie in enumerate(recommendations):
+            col = cols[i % 2]  # Alternate between the two columns
+            col.markdown(f'<div class="recommendation">{i+1}. {movie}</div>', unsafe_allow_html=True)
+
+   
 
 if __name__ == "__main__":
     main()
