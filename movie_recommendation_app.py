@@ -1,15 +1,17 @@
+import streamlit as st
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
 
 # Load dataset
+@st.cache_data
 def load_data(file_path):
     try:
         df = pd.read_csv(file_path)
         return df
     except Exception as e:
-        print(f"Error loading data: {e}")
+        st.error(f"Error loading data: {e}")
         return pd.DataFrame()  # Return empty DataFrame on error
 
 # Preprocess data
@@ -19,7 +21,7 @@ def preprocess_data(df):
         df = df[['title', 'vote_average', 'vote_count']].dropna()
         return df
     except Exception as e:
-        print(f"Error preprocessing data: {e}")
+        st.error(f"Error preprocessing data: {e}")
         return pd.DataFrame()  # Return empty DataFrame on error
 
 # Compute features
@@ -30,7 +32,7 @@ def compute_features(df):
         features = scaler.fit_transform(df[['vote_average', 'vote_count']])
         return features
     except Exception as e:
-        print(f"Error computing features: {e}")
+        st.error(f"Error computing features: {e}")
         return np.array([])  # Return empty array on error
 
 # Train the KNN model
@@ -40,7 +42,7 @@ def train_knn(features):
         knn.fit(features)
         return knn
     except Exception as e:
-        print(f"Error training KNN model: {e}")
+        st.error(f"Error training KNN model: {e}")
         return None
 
 # Get movie recommendations based on KNN
@@ -60,42 +62,46 @@ def get_recommendations(title, df, knn, features):
         recommended_movies = df['title'].iloc[movie_indices].tolist()
         return recommended_movies
     except Exception as e:
-        print(f"Error getting recommendations: {e}")
+        st.error(f"Error getting recommendations: {e}")
         return []  # Return empty list on error
 
-# Main
-if __name__ == "__main__":
+# Streamlit App
+def main():
+    st.title("Movie Recommendation System")
+    
     # Load and preprocess data
     file_path = 'tmdb_5000_movies.csv'  # Replace with your file path
     df = load_data(file_path)
     
     if df.empty:
-        print("Dataset could not be loaded. Exiting...")
-        exit()
+        st.stop()  # Stop execution if data loading failed
     
     df = preprocess_data(df)
-    
     if df.empty:
-        print("Data preprocessing failed. Exiting...")
-        exit()
+        st.stop()  # Stop execution if preprocessing failed
     
     features = compute_features(df)
-    
     if features.size == 0:
-        print("Feature computation failed. Exiting...")
-        exit()
+        st.stop()  # Stop execution if feature computation failed
     
     knn = train_knn(features)
-    
     if knn is None:
-        print("KNN training failed. Exiting...")
-        exit()
+        st.stop()  # Stop execution if model training failed
     
-    # Input movie title and get recommendations
-    movie_title = input("Enter a movie title: ")
-    recommendations = get_recommendations(movie_title, df, knn, features)
+    # Movie selection
+    st.header("Select a Movie")
+    movie_list = df['title'].tolist()
+    selected_movie = st.selectbox("Choose a movie:", movie_list)
     
-    # Display recommendations
-    print(f"\nRecommendations for '{movie_title}':")
-    for i, movie in enumerate(recommendations, 1):
-        print(f"{i}. {movie}")
+    # Show recommendations
+    if st.button("Recommend"):
+        recommendations = get_recommendations(selected_movie, df, knn, features)
+        if recommendations:
+            st.write(f"**Recommended Movies (Similar to {selected_movie}):**")
+            for i, movie in enumerate(recommendations, 1):
+                st.write(f"{i}. {movie}")
+        else:
+            st.write("No recommendations found.")
+
+if __name__ == "__main__":
+    main()
