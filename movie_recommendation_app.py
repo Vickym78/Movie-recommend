@@ -74,15 +74,12 @@ def main():
 
     # Button for recommendations
     if st.button("🎬 Recommend Movies"):
-    recommendations = get_recommendations(selected_movie, df, knn, features)
+        recommendations = get_recommendations(selected_movie, df, knn, features)
 
-    # Display recommendations in a styled format
-    st.write(f"### Recommendations for **{selected_movie}**:")
-    for i, movie in enumerate(recommendations, 1):  # Start enumeration from 1
-        st.markdown(f'<div class="recommendation">{i}. {movie}</div>', unsafe_allow_html=True)
-)
-
-   
+        # Display recommendations in a styled format
+        st.write(f"### Recommendations for **{selected_movie}**:")
+        for i, movie in enumerate(recommendations, 1):  # Start enumeration from 1
+            st.markdown(f'<div class="recommendation">{i}. {movie}</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
